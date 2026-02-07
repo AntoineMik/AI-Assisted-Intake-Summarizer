@@ -1,0 +1,2 @@
+[console_scripts]
+intake-batch = intake_summarizer.cli:main

@@ -1,0 +1,23 @@
+[project]
+name = "intake_summarizer"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "prefect>=2.16.0",
+  "pydantic>=2.6.0",
+  "python-dotenv>=1.0.0",
+  "openai>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "ruff>=0.5.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[project.scripts]
+intake-batch = "intake_summarizer.cli:main"

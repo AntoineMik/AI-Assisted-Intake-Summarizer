@@ -1,0 +1,6 @@
+pyproject.toml
+intake_summarizer.egg-info/PKG-INFO
+intake_summarizer.egg-info/SOURCES.txt
+intake_summarizer.egg-info/dependency_links.txt
+intake_summarizer.egg-info/requires.txt
+intake_summarizer.egg-info/top_level.txt
