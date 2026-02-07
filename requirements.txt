@@ -1,6 +1,18 @@
+# Web UI
 fastapi
 uvicorn[standard]
 jinja2
 python-multipart
+
+# Validation / schema
 pydantic
+
+# Orchestration
 prefect
+
+# HTTP + config
+httpx
+python-dotenv
+
+# LLM providers (optional at runtime, required for install)
+openai
