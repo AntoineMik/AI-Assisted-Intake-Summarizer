@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="grid gap-6">
+  <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-xl font-semibold">Summary result</h1>
+        <p class="mt-1 text-sm text-slate-600">Review the fields below and use red flags to guide escalation.</p>
+      </div>
+      <a href="/" class="text-sm font-semibold text-slate-900 hover:underline">New intake</a>
+    </div>
+
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="rounded-xl ring-1 ring-slate-200 p-4">
+        <div class="text-xs text-slate-500">Urgency</div>
+        <div class="mt-1 text-lg font-semibold">{{ summary.urgency }}</div>
+      </div>
+      <div class="rounded-xl ring-1 ring-slate-200 p-4">
+        <div class="text-xs text-slate-500">Triage Category</div>
+        <div class="mt-1 text-lg font-semibold">{{ summary.triage_category }}</div>
+      </div>
+      <div class="rounded-xl ring-1 ring-slate-200 p-4">
+        <div class="text-xs text-slate-500">Confidence</div>
+        <div class="mt-1 text-lg font-semibold">{{ summary.confidence }}</div>
+      </div>
+    </div>
+
+    <div class="mt-5 grid gap-4">
+      <div class="rounded-xl ring-1 ring-slate-200 p-4">
+        <div class="text-sm font-semibold">Chief complaint</div>
+        <div class="mt-1 text-sm text-slate-700">{{ summary.chief_complaint }}</div>
+      </div>
+
+      <div class="rounded-xl ring-1 ring-slate-200 p-4">
+        <div class="text-sm font-semibold">Symptoms</div>
+        <ul class="mt-2 list-disc pl-5 text-sm text-slate-700 space-y-1">
+          {% for s in summary.symptoms %}
+            <li>{{ s }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="rounded-xl ring-1 ring-slate-200 p-4">
+        <div class="text-sm font-semibold">Red flags</div>
+        {% if summary.red_flags and summary.red_flags|length > 0 %}
+          <ul class="mt-2 list-disc pl-5 text-sm text-red-800 space-y-1">
+            {% for r in summary.red_flags %}
+              <li>{{ r }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="mt-2 text-sm text-slate-600">None.</div>
+        {% endif %}
+      </div>
+
+      <div class="rounded-xl ring-1 ring-slate-200 p-4">
+        <div class="text-sm font-semibold">Recommended next step</div>
+        <div class="mt-1 text-sm text-slate-700">{{ summary.recommended_next_step }}</div>
+      </div>
+
+      {% if persisted %}
+        <div class="rounded-xl bg-emerald-50 ring-1 ring-emerald-200 p-4 text-sm text-emerald-900">
+          Saved output to: <code>{{ out_path }}</code>
+        </div>
+      {% endif %}
+
+      <div class="rounded-xl ring-1 ring-slate-200 p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-sm font-semibold">Raw JSON</div>
+          <button id="copyBtn"
+            class="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-900 hover:bg-slate-200">
+            Copy JSON
+          </button>
+        </div>
+        <pre id="jsonBlock" class="mt-3 overflow-auto rounded-xl bg-slate-950 p-4 text-xs text-slate-100">{{ summary | tojson(indent=2) }}</pre>
+      </div>
+
+      <details class="rounded-xl ring-1 ring-slate-200 p-4">
+        <summary class="cursor-pointer text-sm font-semibold">Original intake text</summary>
+        <pre class="mt-3 whitespace-pre-wrap text-sm text-slate-700">{{ original_text }}</pre>
+      </details>
+    </div>
+  </div>
+</div>
+
+<div class="mt-6 flex flex-wrap gap-3">
+  <!-- Back to main -->
+  <a href="/"
+     class="inline-flex items-center rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-200">
+    Back
+  </a>
+
+  <!-- Retry same input -->
+  <form action="/summarize" method="post" class="inline">
+    <input type="hidden" name="intake_text" value="{{ original_text | e }}">
+    <input type="hidden" name="persist" value="{{ 'true' if persisted else 'false' }}">
+
+    {# If you want to carry chaos controls forward, uncomment these and ensure you pass them into the template #}
+    {# <input type="hidden" name="chaos_enabled" value="{{ 'true' if chaos_enabled else 'false' }}"> #}
+    {# <input type="hidden" name="chaos_rate" value="{{ chaos_rate }}"> #}
+    {# <input type="hidden" name="chaos_seed" value="{{ chaos_seed }}"> #}
+
+    <button type="submit"
+      class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+      Retry
+    </button>
+  </form>
+</div>
+
+<script>
+  const btn = document.getElementById("copyBtn");
+  const block = document.getElementById("jsonBlock");
+  btn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(block.textContent);
+      btn.textContent = "Copied";
+      setTimeout(() => btn.textContent = "Copy JSON", 1200);
+    } catch (e) {
+      btn.textContent = "Copy failed";
+      setTimeout(() => btn.textContent = "Copy JSON", 1200);
+    }
+  });
+</script>
+
+{% endblock %}

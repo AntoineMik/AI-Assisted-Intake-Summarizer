@@ -1,0 +1,3 @@
+Patient requests a virtual visit for sore throat, runny nose, and mild cough.
+Symptoms began three days ago.
+Denies fever, chest pain, or shortness of breath.

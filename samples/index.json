@@ -1,0 +1,52 @@
+{
+  "samples": [
+    {
+      "id": "emergency_chest_pain",
+      "title": "Emergency: Chest pain + shortness of breath",
+      "filename": "emergency_chest_pain.txt",
+      "tags": ["emergency", "cardio", "override"]
+    },
+    {
+      "id": "emergency_neuro",
+      "title": "Emergency: Neuro symptoms",
+      "filename": "emergency_neuro.txt",
+      "tags": ["emergency", "neuro"]
+    },
+    {
+      "id": "urgent_abdominal_pain",
+      "title": "Urgent: Abdominal pain",
+      "filename": "urgent_abdominal_pain.txt",
+      "tags": ["urgent", "in_person"]
+    },
+    {
+      "id": "telehealth_uri",
+      "title": "Telehealth: URI symptoms",
+      "filename": "telehealth_uri.txt",
+      "tags": ["telehealth", "routine"]
+    },
+    {
+      "id": "telehealth_upper_respiratory",
+      "title": "Telehealth: Mild rash",
+      "filename": "telehealth_upper_respiratory.txt",
+      "tags": ["telehealth"]
+    },
+    {
+      "id": "routine_med_refill",
+      "title": "Routine: Medication refill",
+      "filename": "routine_med_refill.txt",
+      "tags": ["routine", "admin"]
+    },
+    {
+      "id": "routine_followup",
+      "title": "Routine: Follow-up",
+      "filename": "routine_followup.txt",
+      "tags": ["routine"]
+    },
+    {
+      "id": "self_care_allergies",
+      "title": "Self-care: Allergies",
+      "filename": "self_care_allergies.txt",
+      "tags": ["self_care", "routine"]
+    }
+  ]
+}

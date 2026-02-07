@@ -6,10 +6,9 @@ from intake_summarizer.schema import IntakeSummary
 from intake_summarizer.settings import get_settings
 from intake_summarizer.persist_failures import persist_failure
 from intake_summarizer.results import IntakeResult
-
+import time
 
 def _unwrap_exc(e: Exception) -> Exception:
-    # Unwrap common Python exception chaining
     cur = e
     while True:
         nxt = getattr(cur, "__cause__", None) or getattr(cur, "__context__", None)
@@ -17,20 +16,65 @@ def _unwrap_exc(e: Exception) -> Exception:
             return cur
         cur = nxt
 
-@task(retries=2, retry_delay_seconds=2)
-def t_summarize(text: str) -> IntakeSummary:
+@task(retries=0)  # IMPORTANT: disable Prefect retries; we do selective retry ourselves
+def t_summarize(text: str, max_attempts: int = 3, delay_seconds: float = 2.0) -> IntakeSummary:
     logger = get_run_logger()
-    logger.info("Calling summarizer (LLM).")
-    return summarize_intake(text)
+    attempt = 0
+
+    while True:
+        attempt += 1
+        try:
+            logger.info(f"Calling summarizer (LLM). attempt={attempt}/{max_attempts}")
+            return summarize_intake(text)
+
+        except RetryableLLMError as e:
+            logger.warning(f"Retryable LLM failure: {e}")
+            if attempt >= max_attempts:
+                raise
+            time.sleep(delay_seconds)
+
+        except NonRetryableLLMError:
+            # Contract mismatch: do NOT retry
+            raise
+
+@task
+def t_validate(summary: IntakeSummary, text: str) -> IntakeSummary:
+    return enforce_business_rules(summary, text)
 
 @task
 def t_persist(summary: IntakeSummary, text: str) -> str:
     path = persist_summary(summary, text=text)
     return str(path)
 
-@task
-def t_validate(summary: IntakeSummary, text: str) -> IntakeSummary:
-    return enforce_business_rules(summary, text)
+@flow(name="intake-summarizer", retries=0)
+def intake_flow(text: str) -> str:
+    logger = get_run_logger()
+    logger.info("Starting intake summarization flow.")
+    s = get_settings()
+
+    try:
+        summary = t_summarize(text)  # selective retries happen inside task
+        summary = t_validate(summary, text)
+        out_path = t_persist(summary, text)
+
+    except Exception as e:
+        root = _unwrap_exc(e)
+
+        if isinstance(root, (RetryableLLMError, NonRetryableLLMError)):
+            fail_path = persist_failure(
+                text=text,
+                provider=s.llm_provider,
+                model=s.llm_model,
+                error_type=type(root).__name__,
+                error_message=str(root),
+                raw_output=getattr(root, "raw", None),
+            )
+            logger.error(f"Persisted failure artifact to: {fail_path}")
+
+        raise
+
+    logger.info(f"Persisted summary to: {out_path}")
+    return out_path
 
 # @task
 # def t_persist(summary: IntakeSummary) -> str:
@@ -47,35 +91,6 @@ def t_validate(summary: IntakeSummary, text: str) -> IntakeSummary:
 #     logger.info(f"Persisted summary to: {out_path}")
 #     return out_path
 
-@flow(name="intake-summarizer", retries=0)  # recommend: no flow retry; task retries are enough
-def intake_flow(text: str) -> str:
-    logger = get_run_logger()
-    logger.info("Starting intake summarization flow.")
-
-    s = get_settings()
-
-    try:
-        summary = t_summarize(text)
-    except Exception as e:
-        root = _unwrap_exc(e)
-        if isinstance(root, (RetryableLLMError, NonRetryableLLMError)):
-            fail_path = persist_failure(
-                text=text,
-                provider=s.llm_provider,
-                model=s.llm_model,
-                error_type=type(root).__name__,
-                error_message=str(root),
-                raw_output=getattr(root, "raw", None),
-            )
-            logger.error(f"Persisted failure artifact to: {fail_path}")
-            logger.info(f"Persisted summary key={out_path.split('_')[-1].split('.')[0]} path={out_path}")
-        raise
-
-    summary = t_validate(summary, text)
-    out_path = t_persist(summary, text)
-    logger.info(f"Persisted summary to: {out_path}")
-    return out_path
-
 @flow(name="intake-summarizer-batch")
 def intake_batch_flow(texts: list[str]) -> list[IntakeResult]:
     logger = get_run_logger()
@@ -91,8 +106,6 @@ def intake_batch_flow(texts: list[str]) -> list[IntakeResult]:
 
     
     return results
-
-
 
 @task(retries=0)
 def t_process_one(text: str) -> IntakeResult:
