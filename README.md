@@ -292,3 +292,113 @@ IntakeResult(
 ## Final Note
 
 This project prioritizes **safety, determinism, and auditability** over raw automation.
+
+
+## Frameworks & Design Philosophy
+
+This project is intentionally built using small, composable frameworks that each solve a specific operational concern. The goal is to make the system auditable, resilient, and safe for clinical workflows, while remaining easy to extend.
+
+⸻
+
+### ZenFlow (Workflow Orchestration)
+
+#### Purpose:
+ZenFlow is used to orchestrate the intake pipeline as a series of deterministic, observable steps rather than a single opaque function call.
+
+How it’s used:
+	•	Each major step (summarization, validation, persistence) is treated as a discrete unit of work
+	•	Failures are handled explicitly and classified as retryable or non-retryable
+	•	Batch processing uses best-effort semantics so one failed intake does not block others
+
+Why this matters:
+	•	Clinical workflows require traceability and controlled retries
+	•	LLMs are probabilistic; orchestration provides guardrails
+	•	Enables future scaling (queues, async execution, scheduled jobs)
+
+⸻
+
+### Pydantic (Data Contracts & Validation)
+
+#### Purpose:
+Pydantic defines the single source of truth for the intake summary data contract.
+
+How it’s used:
+	•	IntakeSummary enforces strict field types, allowed values, and constraints
+	•	All LLM output is validated against this schema
+	•	Any schema violation is treated as a non-retryable contract failure
+
+Why this matters:
+	•	Prevents malformed or hallucinated outputs from entering the system
+	•	Ensures downstream systems always receive predictable data
+	•	Makes audits and debugging significantly easier
+
+⸻
+
+### FastAPI (Clinician UI & Developer API)
+
+#### Purpose:
+FastAPI provides both a clinician-facing web interface and a developer-facing API using the same core logic.
+
+How it’s used:
+	•	Clinicians can paste or upload intake text via a clean web UI
+	•	Developers can integrate via a structured JSON API
+	•	Error messages are sanitized for clinicians but logged in full for operators
+
+Why this matters:
+	•	Separates clinical UX concerns from system internals
+	•	Enables safe public-facing deployment
+	•	Supports future integrations (EHRs, portals, services)
+
+⸻
+
+### Persistence Layer (Audit & Failure Artifacts)
+
+#### Purpose:
+Persistence is designed for auditability first, not just storage.
+
+How it’s used:
+	•	Successful summaries are written as structured JSON artifacts
+	•	Failed attempts generate failure artifacts with:
+	•	Input text
+	•	Provider and model metadata
+	•	Error classification
+	•	Raw LLM output (when available)
+
+Why this matters:
+	•	Clinical systems must explain why something failed
+	•	Supports debugging without re-running live data
+	•	Enables compliance, QA review, and model evaluation
+
+⸻
+
+#### Mock LLM + Chaos Mode (Resilience Testing)
+
+Purpose:
+The mock LLM simulates real-world LLM behavior — including failures.
+
+How it’s used:
+	•	Deterministic outputs for local development
+	•	Optional “chaos mode” to inject malformed JSON or partial responses
+	•	Chaos controls are exposed via environment variables and UI
+
+Why this matters:
+	•	LLMs fail in non-obvious ways in production
+	•	Testing failure paths is as important as testing success paths
+	•	Allows confidence before integrating paid or regulated providers
+
+⸻
+
+### Separation of Concerns (Core Principle)
+
+This project follows a strict separation between:
+	•	Generation (LLM output)
+	•	Validation (schema + business rules)
+	•	Persistence (success and failure artifacts)
+	•	Presentation (clinician UI)
+	•	Integration (developer API)
+
+This ensures:
+	•	No single layer can silently corrupt data
+	•	Each component can be replaced independently
+	•	The system remains understandable under stress
+
