@@ -17,6 +17,7 @@ All critical decisions (urgency, routing, escalation) are enforced deterministic
 1. Click **Open in GitHub Codespaces** above
 2. In the terminal:
    ```bash
+   cd src/
    uvicorn intake_summarizer.app:app --host 0.0.0.0 --port 8000 --reload
 ---
 Codespaces will auto-open the forwarded port in your browser.
