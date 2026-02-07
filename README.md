@@ -10,6 +10,32 @@ The **AI-Assisted Intake Summarizer** is a safety-first clinical intake processi
 The system is designed so that **LLMs assist — but never decide**.  
 All critical decisions (urgency, routing, escalation) are enforced deterministically in code.
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/AntoineMik/AI-Assisted-Intake-Summarizer)
+
+### Run in Codespaces
+
+1. Click **Open in GitHub Codespaces** above
+2. In the terminal:
+   ```bash
+   uvicorn intake_summarizer.app:app --host 0.0.0.0 --port 8000 --reload
+---
+Codespaces will auto-open the forwarded port in your browser.
+---
+
+## 4) Make sure FastAPI binds correctly
+Codespaces requires binding to **0.0.0.0** (not localhost). The command above handles it.
+
+---
+
+## 5) Quick sanity check locally (optional)
+In your local venv:
+
+```bash
+python -m pip install -r requirements.txt
+python -m uvicorn intake_summarizer.app:app --reload
+```
+If that works locally, it will work in Codespaces.
+
 ---
 
 ## Primary Goals
